@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skins de Minecraft</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b1331;
+            color: #f3f4fd;
+        }
+        header {
+            padding: 24px 16px;
+            text-align: center;
+            background: linear-gradient(135deg, #2a3d90, #0f183e);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        header p {
+            margin: 8px auto 0;
+            max-width: 680px;
+            color: #d5d9ff;
+        }
+        .container {
+            max-width: 1040px;
+            margin: 24px auto;
+            padding: 0 16px 32px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .controls input,
+        .controls button {
+            padding: 12px 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        .controls input {
+            flex: 1;
+            min-width: 220px;
+            background: #19225c;
+            color: #f8fbff;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        .controls button {
+            background: #4e7bff;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .controls button:hover {
+            background: #3f66d6;
+        }
+        .grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+        .card {
+            background: rgba(18, 24, 59, 0.95);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+        }
+        .card img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            display: block;
+        }
+        .card-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .card-title {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+        .card-description {
+            margin: 0;
+            color: #bbc0ff;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: auto;
+        }
+        .card-actions button {
+            flex: 1 1 120px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            background: #314892;
+            color: #f8fbff;
+            transition: background 0.2s ease;
+        }
+        .card-actions button:hover {
+            background: #243e7f;
+        }
+        .message {
+            text-align: center;
+            color: #d7f7c3;
+            min-height: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Meu site de skins do Minecraft</h1>
+        <p>Adicione ou copie URLs de skins para usar no Minecraft. Clique em "Copiar URL" e cole no jogo.</p>
+    </header>
+    <main class="container">
+        <div class="controls">
+            <input id="newSkinUrl" type="url" placeholder="Cole a URL da skin aqui" />
+            <input id="skinFileInput" type="file" accept="image/*" />
+            <button id="addSkinBtn">Adicionar skin</button>
+            <button id="addFileBtn" type="button">Adicionar arquivo</button>
+        </div>
+        <div class="message" id="message"></div>
+        <div class="grid" id="skinGrid"></div>
+    </main>
+
+    <template id="skinTemplate">
+        <article class="card">
+            <img src="" alt="Skin do Minecraft" />
+            <div class="card-body">
+                <h2 class="card-title"></h2>
+                <p class="card-description"></p>
+                <div class="card-actions">
+                    <button class="copy-btn">Copiar URL</button>
+                    <button class="open-btn">Abrir imagem</button>
+                </div>
+            </div>
+        </article>
+    </template>
+
+    <script>
+        const skinGrid = document.getElementById('skinGrid');
+        const newSkinUrl = document.getElementById('newSkinUrl');
+        const skinFileInput = document.getElementById('skinFileInput');
+        const addSkinBtn = document.getElementById('addSkinBtn');
+        const addFileBtn = document.getElementById('addFileBtn');
+        const message = document.getElementById('message');
+        const skinTemplate = document.getElementById('skinTemplate');
+
+        const defaultSkins = [
+            {
+                name: 'Skin 1 - Cavaleiro',
+                url: 'https://i.imgur.com/2Y3xQsp.png',
+                description: 'Skin escura com detalhes de armadura e capa.'
+            },
+            {
+                name: 'Skin 2 - Dragão',
+                url: 'https://i.imgur.com/7CPOEiM.png',
+                description: 'Visual de dragão com cores chamativas.'
+            },
+            {
+                name: 'Skin 3 - Futurista',
+                url: 'https://i.imgur.com/EZW5Gb7.png',
+                description: 'Tema futurista com azul neon e preto.'
+            }
+        ];
+
+        let skins = [...defaultSkins];
+
+        function showMessage(text, isError = false) {
+            message.textContent = text;
+            message.style.color = isError ? '#ff9fa8' : '#d7f7c3';
+            clearTimeout(message.timeoutId);
+            message.timeoutId = setTimeout(() => {
+                message.textContent = '';
+            }, 3000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('URL copiada para a área de transferência!');
+            }).catch(() => {
+                showMessage('Não foi possível copiar. Tente manualmente.', true);
+            });
+        }
+
+        function addSkinFromFile(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                skins.unshift({
+                    name: file.name,
+                    url: reader.result,
+                    description: 'Skin adicionada a partir de arquivo. Copie a URL para usar no Minecraft.'
+                });
+                renderSkins();
+                showMessage('Arquivo adicionado como skin!');
+            };
+            reader.onerror = () => {
+                showMessage('Erro ao ler o arquivo. Tente outro arquivo.', true);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderSkins() {
+            skinGrid.innerHTML = '';
+            skins.forEach((skin, index) => {
+                const card = skinTemplate.content.cloneNode(true);
+                const img = card.querySelector('img');
+                const title = card.querySelector('.card-title');
+                const description = card.querySelector('.card-description');
+                const copyBtn = card.querySelector('.copy-btn');
+                const openBtn = card.querySelector('.open-btn');
+
+                img.src = skin.url;
+                img.alt = skin.name;
+                title.textContent = skin.name;
+                description.textContent = skin.description;
+
+                copyBtn.addEventListener('click', () => {
+                    copyToClipboard(skin.url);
+                });
+                openBtn.addEventListener('click', () => {
+                    window.open(skin.url, '_blank');
+                });
+
+                skinGrid.appendChild(card);
+            });
+        }
+
+        function isValidUrl(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' || url.protocol === 'http:';
+            } catch (error) {
+                return false;
+            }
+        }
+
+        addSkinBtn.addEventListener('click', () => {
+            const url = newSkinUrl.value.trim();
+            if (!url) {
+                showMessage('Cole uma URL de skin antes de adicionar.', true);
+                return;
+            }
+            if (!isValidUrl(url)) {
+                showMessage('URL inválida. Verifique e tente novamente.', true);
+                return;
+            }
+            skins.unshift({
+                name: `Nova skin #${skins.length + 1}`,
+                url,
+                description: 'Skin adicionada por você. Copie para usar no Minecraft.'
+            });
+            newSkinUrl.value = '';
+            renderSkins();
+            showMessage('Skin adicionada com sucesso!');
+        });
+
+        addFileBtn.addEventListener('click', () => {
+            const file = skinFileInput.files[0];
+            if (!file) {
+                showMessage('Selecione um arquivo de imagem antes de adicionar.', true);
+                return;
+            }
+            addSkinFromFile(file);
+            skinFileInput.value = '';
+        });
+
+        newSkinUrl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                addSkinBtn.click();
+            }
+        });
+
+        renderSkins();
+    </script>
+</body>
+</html>
